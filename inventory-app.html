@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ombor · Aksesuarlar</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#15171a;
+    --card:#1d2024;
+    --card-hi:#24282d;
+    --line:#2c3036;
+    --text:#eef0f2;
+    --muted:#8b8f97;
+    --accent:#4f8ef7;
+    --accent-dim:#2c4a80;
+    --warn:#f5a623;
+    --danger:#e0574f;
+    --good:#3fbf7f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100%;overflow-x:hidden;}
+  body{padding-bottom:96px;}
+  ::selection{background:var(--accent-dim);}
+
+  header.top{
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg,var(--bg) 70%,transparent);
+    padding:18px 16px 10px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);margin:0 0 4px;
+  }
+  h1{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;font-size:26px;letter-spacing:.01em;
+    margin:0 0 14px;color:var(--text);
+  }
+
+  .syncbar{
+    display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--muted);margin:-6px 0 10px;min-height:16px;
+  }
+  .syncbar.err{color:var(--danger);}
+  .syncbar.ok{color:var(--good);}
+  .syncbar .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 auto;}
+  .syncbar button{
+    margin-left:auto;background:none;border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:3px 9px;font-size:11px;font-family:'JetBrains Mono',monospace;cursor:pointer;
+  }
+
+  .stats{
+    display:flex;gap:10px;margin-bottom:14px;
+  }
+  .stat{
+    flex:1;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:10px 12px;
+  }
+  .stat .n{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;
+    display:block;line-height:1.1;
+  }
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+  .backup-row{display:flex;gap:8px;margin-bottom:10px;}
+  .mini-btn{
+    flex:1;background:var(--card);border:1px solid var(--line);color:var(--muted);
+    border-radius:10px;padding:8px 10px;font-size:12px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .mini-btn:active{background:var(--card-hi);}
+
+  .searchbar{
+    display:flex;gap:8px;margin-bottom:10px;
+  }
+  .searchbar input{
+    flex:1;background:var(--card);border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:11px 14px;font-size:15px;font-family:'Inter',sans-serif;
+    outline:none;
+  }
+  .searchbar input:focus{border-color:var(--accent);}
+  .searchbar input::placeholder{color:var(--muted);}
+
+  .chips{display:flex;gap:6px;overflow-x:auto;padding:2px 16px 12px;margin:0 -16px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:12px;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+    color:var(--muted);background:var(--card);cursor:pointer;white-space:nowrap;
+  }
+  .chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
+  main{padding:0 16px;}
+
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+  }
+  .empty .big{font-size:38px;display:block;margin-bottom:10px;}
+  .empty p{margin:4px 0;font-size:14px;}
+
+  .row{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 12px 12px 14px;margin-bottom:10px;
+    display:flex;align-items:center;gap:12px;
+    position:relative;overflow:hidden;
+    transition:border-color .15s;
+  }
+  .row.low{border-color:rgba(245,166,35,.5);}
+  .row .catbar{
+    position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);
+  }
+  .thumb{
+    width:44px;height:44px;border-radius:10px;flex:0 0 auto;
+    background:var(--bg);border:1px solid var(--line);
+    background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:var(--muted);overflow:hidden;
+  }
+  .row-info{flex:1;min-width:0;}
+  .row-name{font-weight:600;font-size:15px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row-meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    margin-top:3px;text-transform:uppercase;letter-spacing:.03em;
+  }
+  .row-meta .low-tag{color:var(--warn);}
+
+  .counter{
+    display:flex;align-items:center;gap:0;background:var(--bg);
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:0 0 auto;
+  }
+  .counter button{
+    width:34px;height:34px;background:transparent;border:none;color:var(--text);
+    font-size:18px;font-family:'Inter',sans-serif;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .counter button:active{background:var(--card-hi);}
+  .counter .minus{color:var(--danger);}
+  .counter .plus{color:var(--good);}
+  .odometer{
+    width:40px;text-align:center;font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:16px;position:relative;height:20px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .odometer span{display:inline-block;}
+  .odometer.bump span{animation:bump .28s ease;}
+  @keyframes bump{
+    0%{transform:translateY(0);opacity:1;}
+    40%{transform:translateY(-8px);opacity:0;}
+    41%{transform:translateY(8px);}
+    100%{transform:translateY(0);opacity:1;}
+  }
+
+  .del{
+    width:30px;height:30px;flex:0 0 auto;border:none;background:transparent;
+    color:var(--muted);font-size:16px;cursor:pointer;
+  }
+
+  .fab{
+    position:fixed;right:18px;bottom:24px;z-index:30;
+    width:58px;height:58px;border-radius:50%;
+    background:var(--accent);color:#0b1220;border:none;
+    font-size:28px;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 20px rgba(79,142,247,.4);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .fab:active{transform:scale(.94);}
+
+  .sheet-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .sheet-backdrop.open{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:41;
+    background:var(--card);border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0;padding:18px 18px 24px;
+    transform:translateY(100%);transition:transform .25s ease;
+    max-height:86vh;overflow-y:auto;
+  }
+  .sheet.open{transform:translateY(0);}
+  .sheet h2{
+    font-family:'Oswald',sans-serif;font-size:19px;margin:0 0 16px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .sheet h2 .x{cursor:pointer;color:var(--muted);font-size:20px;}
+  label{
+    display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);margin:14px 0 6px;font-family:'JetBrains Mono',monospace;
+  }
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=number]{
+    width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:12px 14px;font-size:15px;font-family:'Inter',sans-serif;outline:none;
+  }
+  input:focus{border-color:var(--accent);}
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+  .catlist{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .catlist .chip{cursor:pointer;}
+
+  .photo-picker{display:flex;align-items:center;gap:12px;}
+  .photo-preview{
+    width:64px;height:64px;border-radius:12px;background:var(--bg);
+    border:1px solid var(--line);background-size:cover;background-position:center;
+    display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);
+    flex:0 0 auto;overflow:hidden;
+  }
+  .photo-actions{display:flex;flex-direction:column;gap:8px;flex:1;}
+  .photo-btn{
+    background:var(--bg);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:9px 12px;font-size:13px;text-align:left;cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .photo-btn.remove{color:var(--danger);}
+
+  .save-btn{
+    width:100%;margin-top:20px;background:var(--accent);color:#0b1220;
+    border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;
+    cursor:pointer;font-family:'Inter',sans-serif;
+  }
+  .save-btn:active{opacity:.85;}
+  .save-btn:disabled{opacity:.5;}
+  .hint{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p class="eyebrow">SKLAD · JONLI HISOB</p>
+  <h1>Aksesuarlar ombori</h1>
+  <div class="syncbar" id="syncbar"></div>
+  <div class="stats">
+    <div class="stat"><span class="n" id="statTypes">0</span><span class="l">Tur</span></div>
+    <div class="stat"><span class="n" id="statUnits">0</span><span class="l">Dona</span></div>
+    <div class="stat"><span class="n" id="statLow">0</span><span class="l">Kam qoldi</span></div>
+  </div>
+  <div class="searchbar">
+    <input type="text" id="search" placeholder="Qidirish: nomi yoki kod...">
+  </div>
+  <div class="chips" id="catChips"></div>
+  <div class="backup-row">
+    <button class="mini-btn" id="exportBtn">📤 Zaxira nusxa olish</button>
+    <button class="mini-btn" id="importBtn">📥 Zaxiradan tiklash</button>
+  </div>
+</header>
+
+<main>
+  <div id="list"></div>
+  <div class="empty" id="emptyState" style="display:none;">
+    <span class="big">📦</span>
+    <p>Hali aksesuar qo'shilmagan.</p>
+    <p>Pastdagi + tugmasi bilan birinchisini qo'shing.</p>
+  </div>
+</main>
+
+<button class="fab" id="fabAdd">+</button>
+
+<div class="sheet-backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet">
+  <h2><span id="sheetTitle">Yangi aksesuar</span><span class="x" id="sheetClose">✕</span></h2>
+
+  <label>Rasm</label>
+  <div class="photo-picker">
+    <div class="photo-preview" id="photoPreview">📦</div>
+    <div class="photo-actions">
+      <button class="photo-btn" id="photoPick">Rasm qo'shish (kamera / galereya)</button>
+      <button class="photo-btn remove" id="photoRemove" style="display:none;">Rasmni olib tashlash</button>
+    </div>
+  </div>
+  <input type="file" accept="image/*" id="photoInput" style="display:none;">
+
+  <label>Nomi</label>
+  <input type="text" id="fName" placeholder="Masalan: Type-C kabel 1m">
+  <div class="row2">
+    <div>
+      <label>Miqdori</label>
+      <input type="number" id="fQty" placeholder="0" min="0">
+    </div>
+    <div>
+      <label>Kam qoldi chegarasi</label>
+      <input type="number" id="fMin" placeholder="5" min="0">
+    </div>
+  </div>
+  <label>Kategoriya</label>
+  <input type="text" id="fCat" placeholder="Masalan: Kabel, Quloqchin, Case...">
+  <div class="catlist" id="fCatSuggest"></div>
+  <label>Kod / SKU (ixtiyoriy)</label>
+  <input type="text" id="fCode" placeholder="Ichki kod, shtrix-kod va h.k.">
+  <button class="save-btn" id="fSave">Saqlash</button>
+  <p class="hint">Miqdorni ro'yxatda tugmalar bilan tez o'zgartirasiz — bu yerga faqat boshlang'ich sonni kiritasiz.</p>
+</div>
+
+<div class="sheet-backdrop" id="backupBackdrop"></div>
+<div class="sheet" id="backupSheet">
+  <h2><span id="backupTitle">Zaxira nusxa</span><span class="x" id="backupClose">✕</span></h2>
+  <p class="hint" id="backupHint" style="margin-top:0;">Quyidagi matnni nusxalab, xavfsiz joyga (masalan, Telegram "Saqlangan xabarlar"ga) yuboring. Kerak bo'lganda shu matnni qaytarib joylab, ma'lumotni tiklaysiz.</p>
+  <textarea id="backupText" rows="8" style="width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;"></textarea>
+  <button class="save-btn" id="backupAction">Nusxalash</button>
+</div>
+
+<script>
+(function(){
+  // Telegram theming
+  try{
+    if(window.Telegram && window.Telegram.WebApp){
+      const tg = window.Telegram.WebApp;
+      tg.ready(); tg.expand();
+    }
+  }catch(e){}
+
+  const STORAGE_KEY = 'accessories:list';
+  let items = [];
+  let editingId = null;
+  let activeCat = 'Barchasi';
+  let pendingPhoto = undefined; // undefined = unchanged, null = removed, string = new dataURL
+
+  const el = id => document.getElementById(id);
+  const listEl = el('list');
+  const emptyEl = el('emptyState');
+  const searchEl = el('search');
+  const chipsEl = el('catChips');
+  const backdrop = el('backdrop');
+  const sheet = el('sheet');
+  const syncbar = el('syncbar');
+
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function setSync(state, msg){
+    // state: 'ok' | 'err' | 'saving' | ''
+    syncbar.className = 'syncbar' + (state==='err' ? ' err' : state==='ok' ? ' ok' : '');
+    if(!msg){ syncbar.innerHTML=''; return; }
+    syncbar.innerHTML = `<span class="dot"></span><span>${msg}</span>` + (state==='err' ? `<button id="retryBtn">Qayta urinish</button>` : '');
+    if(state==='err'){
+      const btn = el('retryBtn');
+      if(btn) btn.addEventListener('click', ()=>persist(true));
+    }
+    if(state==='ok'){
+      clearTimeout(setSync._t);
+      setSync._t = setTimeout(()=>{ syncbar.className='syncbar'; syncbar.innerHTML=''; }, 1800);
+    }
+  }
+
+  async function load(){
+    setSync('saving', 'Yuklanmoqda...');
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      items = res && res.value ? JSON.parse(res.value) : [];
+      setSync('', '');
+    }catch(e){
+      // key not existing throws too — treat as empty store, not an error banner
+      items = [];
+      setSync('', '');
+    }
+    render();
+  }
+
+  async function persist(isRetry){
+    setSync('saving', isRetry ? 'Qayta saqlanmoqda...' : 'Saqlanmoqda...');
+    const payload = JSON.stringify(items);
+    let lastErr = null;
+    for(let attempt=0; attempt<3; attempt++){
+      try{
+        const result = await window.storage.set(STORAGE_KEY, payload, false);
+        if(result){
+          setSync('ok', 'Saqlandi');
+          return true;
+        }
+        lastErr = new Error('empty result');
+      }catch(e){
+        lastErr = e;
+      }
+      if(attempt<2) await new Promise(r=>setTimeout(r, 500*(attempt+1)));
+    }
+    console.error('Saqlashda xato', lastErr);
+    setSync('err', "Saqlanmadi — pastdagi 'Zaxira nusxa olish' bilan matn sifatida saqlab qo'ying");
+    return false;
+  }
+
+  function categories(){
+    const set = new Set(items.map(i=>i.cat).filter(Boolean));
+    return ['Barchasi', ...Array.from(set).sort()];
+  }
+
+  function renderChips(){
+    const cats = categories();
+    if(!cats.includes(activeCat)) activeCat = 'Barchasi';
+    chipsEl.innerHTML = cats.map(c=>
+      `<div class="chip ${c===activeCat?'active':''}" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</div>`
+    ).join('');
+    chipsEl.querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{ activeCat = chip.dataset.cat; render(); });
+    });
+  }
+
+  function renderStats(){
+    const totalUnits = items.reduce((s,i)=>s+i.qty,0);
+    const lowCount = items.filter(i=> i.min>0 && i.qty<=i.min).length;
+    el('statTypes').textContent = items.length;
+    el('statUnits').textContent = totalUnits;
+    el('statLow').textContent = lowCount;
+  }
+
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  function render(){
+    renderChips();
+    renderStats();
+    const q = searchEl.value.trim().toLowerCase();
+    let filtered = items.filter(i=>{
+      const matchesCat = activeCat==='Barchasi' || i.cat===activeCat;
+      const matchesQ = !q || i.name.toLowerCase().includes(q) || (i.code||'').toLowerCase().includes(q);
+      return matchesCat && matchesQ;
+    }).sort((a,b)=> a.name.localeCompare(b.name,'uz'));
+
+    if(filtered.length===0){
+      listEl.innerHTML='';
+      emptyEl.style.display='block';
+      emptyEl.querySelector('p').textContent = items.length===0
+        ? "Hali aksesuar qo'shilmagan."
+        : 'Hech narsa topilmadi.';
+      return;
+    }
+    emptyEl.style.display='none';
+
+    listEl.innerHTML = filtered.map(i=>{
+      const low = i.min>0 && i.qty<=i.min;
+      const thumbStyle = i.photo ? ` style="background-image:url('${i.photo}')"` : '';
+      return `
+      <div class="row ${low?'low':''}" data-id="${i.id}">
+        <div class="catbar"></div>
+        <div class="thumb"${thumbStyle} data-action="edit">${i.photo?'':'📦'}</div>
+        <div class="row-info" data-action="edit">
+          <div class="row-name">${escapeHtml(i.name)}</div>
+          <div class="row-meta">${escapeHtml(i.cat||'Kategoriyasiz')}${i.code? ' · '+escapeHtml(i.code):''}${low?' · <span class="low-tag">KAM QOLDI</span>':''}</div>
+        </div>
+        <div class="counter">
+          <button class="minus" data-action="dec">–</button>
+          <div class="odometer" id="od-${i.id}"><span>${i.qty}</span></div>
+          <button class="plus" data-action="inc">+</button>
+        </div>
+        <button class="del" data-action="del">🗑</button>
+      </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.row').forEach(row=>{
+      const id = row.dataset.id;
+      row.querySelector('[data-action="inc"]').addEventListener('click', ()=>changeQty(id,1));
+      row.querySelector('[data-action="dec"]').addEventListener('click', ()=>changeQty(id,-1));
+      row.querySelector('[data-action="del"]').addEventListener('click', ()=>deleteItem(id));
+      row.querySelectorAll('[data-action="edit"]').forEach(node=>node.addEventListener('click', ()=>openEdit(id)));
+    });
+  }
+
+  function changeQty(id, delta){
+    const item = items.find(i=>i.id===id);
+    if(!item) return;
+    item.qty = Math.max(0, item.qty + delta);
+    const od = el('od-'+id);
+    if(od){
+      od.innerHTML = `<span>${item.qty}</span>`;
+      od.classList.remove('bump'); void od.offsetWidth; od.classList.add('bump');
+    }
+    renderStats();
+    clearTimeout(changeQty._t);
+    changeQty._t = setTimeout(()=>{ persist(); render(); }, 350);
+  }
+
+  function deleteItem(id){
+    if(!confirm("Ushbu aksesuarni o'chirasizmi?")) return;
+    items = items.filter(i=>i.id!==id);
+    persist(); render();
+  }
+
+  function openEdit(id){
+    editingId = id;
+    pendingPhoto = undefined;
+    const item = items.find(i=>i.id===id);
+    el('sheetTitle').textContent = 'Tahrirlash';
+    el('fName').value = item.name;
+    el('fQty').value = item.qty;
+    el('fMin').value = item.min || '';
+    el('fCat').value = item.cat || '';
+    el('fCode').value = item.code || '';
+    setPhotoPreview(item.photo || null);
+    renderCatSuggest();
+    openSheet();
+  }
+
+  function openAdd(){
+    editingId = null;
+    pendingPhoto = undefined;
+    el('sheetTitle').textContent = 'Yangi aksesuar';
+    el('fName').value = '';
+    el('fQty').value = '';
+    el('fMin').value = '';
+    el('fCat').value = activeCat!=='Barchasi' ? activeCat : '';
+    el('fCode').value = '';
+    setPhotoPreview(null);
+    renderCatSuggest();
+    openSheet();
+  }
+
+  function setPhotoPreview(dataUrl){
+    const preview = el('photoPreview');
+    const removeBtn = el('photoRemove');
+    if(dataUrl){
+      preview.style.backgroundImage = `url('${dataUrl}')`;
+      preview.textContent = '';
+      removeBtn.style.display = 'block';
+    } else {
+      preview.style.backgroundImage = '';
+      preview.textContent = '📦';
+      removeBtn.style.display = 'none';
+    }
+  }
+
+  function renderCatSuggest(){
+    const cats = categories().filter(c=>c!=='Barchasi');
+    el('fCatSuggest').innerHTML = cats.map(c=>`<div class="chip" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</div>`).join('');
+    el('fCatSuggest').querySelectorAll('.chip').forEach(chip=>{
+      chip.addEventListener('click', ()=>{ el('fCat').value = chip.dataset.cat; });
+    });
+  }
+
+  function openSheet(){
+    backdrop.classList.add('open');
+    sheet.classList.add('open');
+    setTimeout(()=>el('fName').focus(), 200);
+  }
+  function closeSheet(){
+    backdrop.classList.remove('open');
+    sheet.classList.remove('open');
+  }
+
+  // ---- Photo capture (native camera / gallery picker, no web sourcing) ----
+  el('photoPick').addEventListener('click', ()=> el('photoInput').click());
+  el('photoRemove').addEventListener('click', ()=>{
+    pendingPhoto = null;
+    setPhotoPreview(null);
+  });
+  el('photoInput').addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    compressImage(file, 480, 0.6).then(dataUrl=>{
+      pendingPhoto = dataUrl;
+      setPhotoPreview(dataUrl);
+    }).catch(err=>{
+      console.error('Rasmni siqishda xato', err);
+      alert("Rasmni yuklab bo'lmadi, qayta urinib ko'ring.");
+    });
+  });
+
+  function compressImage(file, maxDim, quality){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = ()=>{
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = ()=>{
+          let w = img.width, h = img.height;
+          if(w > h && w > maxDim){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else if(h >= w && h > maxDim){ w = Math.round(w * maxDim / h); h = maxDim; }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          let q = quality;
+          let out = canvas.toDataURL('image/jpeg', q);
+          // if still large, reduce quality further
+          while(out.length > 350000 && q > 0.25){
+            q -= 0.1;
+            out = canvas.toDataURL('image/jpeg', q);
+          }
+          resolve(out);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function saveForm(){
+    const name = el('fName').value.trim();
+    if(!name){ el('fName').focus(); return; }
+    const qty = Math.max(0, parseInt(el('fQty').value,10) || 0);
+    const min = Math.max(0, parseInt(el('fMin').value,10) || 0);
+    const cat = el('fCat').value.trim();
+    const code = el('fCode').value.trim();
+
+    if(editingId){
+      const item = items.find(i=>i.id===editingId);
+      Object.assign(item, {name, qty, min, cat, code});
+      if(pendingPhoto === null) item.photo = null;
+      else if(typeof pendingPhoto === 'string') item.photo = pendingPhoto;
+    } else {
+      const photo = typeof pendingPhoto === 'string' ? pendingPhoto : null;
+      items.push({id: uid(), name, qty, min, cat, code, photo});
+    }
+    persist();
+    closeSheet();
+    render();
+  }
+
+  el('fabAdd').addEventListener('click', openAdd);
+  el('sheetClose').addEventListener('click', closeSheet);
+  backdrop.addEventListener('click', closeSheet);
+  el('fSave').addEventListener('click', saveForm);
+  searchEl.addEventListener('input', render);
+
+  // ---- Backup / restore (works even if auto-save to storage fails) ----
+  const backupBackdrop = el('backupBackdrop');
+  const backupSheet = el('backupSheet');
+  let backupMode = 'export';
+
+  function openBackupSheet(mode){
+    backupMode = mode;
+    if(mode==='export'){
+      el('backupTitle').textContent = 'Zaxira nusxa';
+      el('backupHint').textContent = 'Quyidagi matnni nusxalab, xavfsiz joyga (masalan, Telegram "Saqlangan xabarlar"ga) yuboring. Kerak bo\'lganda shu matnni qaytarib joylab, ma\'lumotni tiklaysiz.';
+      el('backupText').value = JSON.stringify(items);
+      el('backupText').readOnly = true;
+      el('backupAction').textContent = 'Nusxalash';
+    } else {
+      el('backupTitle').textContent = 'Zaxiradan tiklash';
+      el('backupHint').textContent = "Avval saqlab qo'ygan matningizni shu yerga joylashtiring (paste qiling), so'ng Tiklash tugmasini bosing. Bu joriy ro'yxatning o'rnini bosadi.";
+      el('backupText').value = '';
+      el('backupText').readOnly = false;
+      el('backupAction').textContent = 'Tiklash';
+    }
+    backupBackdrop.classList.add('open');
+    backupSheet.classList.add('open');
+  }
+  function closeBackupSheet(){
+    backupBackdrop.classList.remove('open');
+    backupSheet.classList.remove('open');
+  }
+
+  el('exportBtn').addEventListener('click', ()=>openBackupSheet('export'));
+  el('importBtn').addEventListener('click', ()=>openBackupSheet('import'));
+  el('backupClose').addEventListener('click', closeBackupSheet);
+  backupBackdrop.addEventListener('click', closeBackupSheet);
+
+  el('backupAction').addEventListener('click', async ()=>{
+    if(backupMode==='export'){
+      const text = el('backupText');
+      text.focus(); text.select();
+      let copied = false;
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(text.value);
+          copied = true;
+        }
+      }catch(e){}
+      if(!copied){
+        try{ document.execCommand('copy'); copied = true; }catch(e){}
+      }
+      el('backupAction').textContent = copied ? 'Nusxalandi ✓' : "Matn tanlandi, endi qo'lda nusxalang";
+      setTimeout(()=>{ el('backupAction').textContent = 'Nusxalash'; }, 1800);
+    } else {
+      const raw = el('backupText').value.trim();
+      if(!raw){ return; }
+      try{
+        const parsed = JSON.parse(raw);
+        if(!Array.isArray(parsed)) throw new Error('not an array');
+        items = parsed;
+        await persist();
+        render();
+        closeBackupSheet();
+      }catch(e){
+        alert("Bu matn to'g'ri formatda emas, tiklab bo'lmadi.");
+      }
+    }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
